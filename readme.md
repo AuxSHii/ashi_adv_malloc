@@ -1,4 +1,4 @@
-# ashi'a advanced malloc
+# ashi's advanced malloc
 
 its an advanced malloc implementation i wrote in C , after my basic implementation "shalloc" , i will also be writing a guide for any beginner to follow along , learn the concepts and code this on their own...  
 
