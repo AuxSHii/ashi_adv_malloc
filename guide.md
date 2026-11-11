@@ -77,11 +77,11 @@ because windows and unix-like systems (linux/macOS) manage threads differently a
 
 On Windows
 
-• header File: #include <windows.h>.
-• data type: CRITICAL_SECTION — a Windows struct (RTL_CRITICAL_SECTION) designed specifically for fast locking inside a single process. (Note: windows also has a HANDLE mutex via CreateMutex(), which works across multiple processes, but CRITICAL_SECTION is standard for allocators because it avoids slow kernel transitions unless threads actually collide).
-• functions used code:
-	• void InitializeCriticalSection(LPCRITICAL_SECTION lpCriticalSection) — Takes a pointer to our CRITICAL_SECTION variable (LPCRITICAL_SECTION is just Windows typedef shorthand for CRITICAL_SECTION*). Prepares internal tracking fields before first use; returns nothing (void).
-	why we need this initialization function?
+• header File: #include <windows.h>.  
+• data type: CRITICAL_SECTION — a Windows struct (RTL_CRITICAL_SECTION) designed specifically for fast locking inside a single process. (Note: windows also has a HANDLE mutex via CreateMutex(), which works across multiple processes, but CRITICAL_SECTION is standard for allocators because it avoids slow kernel transitions unless threads actually collide).  
+• functions used code:  
+	• void InitializeCriticalSection(LPCRITICAL_SECTION lpCriticalSection) — Takes a pointer to our CRITICAL_SECTION variable (LPCRITICAL_SECTION is just Windows typedef shorthand for CRITICAL_SECTION*). Prepares internal tracking fields before first use; returns nothing (void).  
+	why we need this initialization function?  
     ```
     when you declare static CRITICAL_SECTION heap_lock; in c, windows just hands you an empty chunk of memory filled with zeroes... it isn't actually a working lock yet.
 calling InitializeCriticalSection(&heap_lock) goes inside that CRITICAL_SECTION struct and fills out the hidden variables windows needs to manage the lock under the hood. specifically it sets up things like:
@@ -126,8 +126,12 @@ so on the very first my_malloc() call in your program, lock_heap() sets up the l
 
 ###  industry standard vs. our teaching implementation
 
-• Global Lock vs. Thread Caching (Real-World Trade-off): using one global mutex (heap_lock) is the classic, rock-solid pattern for single-threaded or lightly threaded applications. however, in massive multi-core production systems (like web servers with 64 threads), a single global lock creates a traffic jam called Lock Contention. Production allocators like Google's tcmalloc and jemalloc solve this by giving each thread its own private local cache of small memory blocks so threads only lock the global heap when their local cache runs dry.
-• Subtle Edge Case in Our Windows Setup: Notice how our Windows lock_heap() uses a bool lock_initialized check on the first call. While fine for learning, if two threads call my_malloc() for the very first time at the exact same nanosecond, both could enter InitializeCriticalSection() simultaneously! In production Windows code, engineers prevent this initialization race using InitOnceExecuteOnce (One-Time Initialization).
+• Global Lock vs. Thread Caching (Real-World Trade-off): using one global mutex (heap_lock) is the classic, rock-solid pattern for single-threaded or lightly threaded applications. however, in massive multi-core production systems (like web servers with 64 threads), a single global lock creates a traffic jam called Lock Contention. Production allocators like Google's tcmalloc and jemalloc solve this by giving each thread its own private local cache of small memory blocks so threads only lock the global heap when their local cache runs dry.  
+
+
+
+• Subtle Edge Case in Our Windows Setup: Notice how our Windows lock_heap() uses a bool lock_initialized check on the 
+first call. While fine for learning, if two threads call my_malloc() for the very first time at the exact same nanosecond, both could enter InitializeCriticalSection() simultaneously! In production Windows code, engineers prevent this initialization race using InitOnceExecuteOnce (One-Time Initialization).
 
 
 
