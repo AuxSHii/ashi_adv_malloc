@@ -43,8 +43,36 @@ void* request_os_memory(size_t size){
 
 #else //else os=unix
 
+#include <unistd.h> //gives sbrk system call   
+#include <pthread.h>    //posix mutex
+
+//global decl & init mutex
+static pthread_mutext_t heap_lock = PTHREAD_MUTEX_INITIALIZER;
+
+//fxn to lock the heap
+//this fxn runs whean a thrad needs to acquire the lock[i.e mem allocation on the way from a perticular thread]
+
+void lock_heap(void){
+	pthread_mutext_lock(&heap_lock);
+}
 
 
+//fxn to unlock the heap
+//this fxn runs when thread needs to realease its ownership [i.e mem alloc happend for that perticular thread , now naother thread can use it nad acquire the lock]
 
+void unlock_heap(void){
+	pthread_mutext_unlock(&heap_lock);
+}
+
+
+//to request memory from OS  [raw mem bytes]
+//unallocated and unorganized space in heap
+//so ask unix for heap memory by moving the program break;
+void* request_os_memory(size_t size){
+	void* block = sbrk(size);
+	if(block == (void*) - 1)
+		return NULL; //os ran out of memory
+	return block;
+}
 
 #endif
