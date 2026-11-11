@@ -21,10 +21,30 @@ void lock_heap(void){
 	EnterCrititcalSection(&heap_lock);
 }
 
+//fxn to unlock the heap 
+//this fxn runs when a thread needs to release its ownership[i.e mem allocation done for that thread]
+void unlock_heap(void){
+	LeaveCriticalSection(&heap_lock);
+
+}
+
+
+//request memory from os
+//fxn that requests raw bytes of memory into heap from OS.
+void* request_os_memory(size_t size){
+	//handler for heap of the process
+	HANDLE heap = GetProcessHeap();
+	//check null case
+	if(heap == NULL)
+		return NULL;
+    //0 flag : default behaviour[no auto zeroing]
+	return HeapAlloc(heap, 0, size);
+}
+
+#else //else os=unix
 
 
 
 
 
-
-#endif //else os=unix
+#endif
